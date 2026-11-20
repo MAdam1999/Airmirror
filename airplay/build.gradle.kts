@@ -1,7 +1,8 @@
 // Vendored from github.com/serezhka/java-airplay (MIT) — protocol + server modules,
-// patched for Android (no java.util.HexFormat, no Stream.toList, hidden MAC fallback).
+// patched for Android (no java.util.HexFormat, no Stream.toList, hidden MAC fallback),
+// and converted to Kotlin.
 plugins {
-    id("java-library")
+    id("org.jetbrains.kotlin.jvm")
 }
 
 java {
@@ -9,8 +10,10 @@ java {
     targetCompatibility = JavaVersion.VERSION_17
 }
 
-tasks.withType<JavaCompile>().configureEach {
-    options.encoding = "UTF-8"
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+    }
 }
 
 dependencies {
@@ -21,7 +24,4 @@ dependencies {
     implementation("org.jmdns:jmdns:3.5.12")
     implementation("io.netty:netty-codec-http:4.1.115.Final")
     implementation("io.lindstrom:m3u8-parser:0.30")
-
-    compileOnly("org.projectlombok:lombok:1.18.34")
-    annotationProcessor("org.projectlombok:lombok:1.18.34")
 }

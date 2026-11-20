@@ -59,12 +59,12 @@ iPhone ──mDNS──▶ discovery ──▶ pairing ──▶ FairPlay handsh
 
 | Module | Role |
 |---|---|
-| `airplay/` | AirPlay receiver protocol, based on [serezhka/java-airplay](https://github.com/serezhka/java-airplay) (MIT) and patched for Android 5 |
+| `airplay/` | AirPlay receiver protocol, based on [serezhka/java-airplay](https://github.com/serezhka/java-airplay) (MIT), patched for Android 5 and converted to Kotlin |
 | `app/` | Android TV app: `MainActivity`, `VideoDecoder`, `AudioDecoder`, `MirrorPlayback` |
 
 ## 🛠️ Build
 
-Needs JDK 17, Android SDK 34 and Gradle 8.7.
+Written in Kotlin. Needs JDK 17, Android SDK 34 and Gradle 8.7 (the Kotlin 2.0.20 plugin is fetched by Gradle).
 
 ```bash
 gradle assembleRelease -x lintVitalAnalyzeRelease -x lintVitalReportRelease -x lintVitalRelease
