@@ -80,7 +80,7 @@ Runs on Android 5.0 Lollipop and newer, with no Google services needed.
 ## 🚀 Quick start
 
 1. **Install** the APK for your TV (see **Download** above and **Installing** below).
-2. Put the TV and the iPhone on the **same Wi‑Fi network**.
+2. Put the TV and the iPhone on the **same network**: the TV on Wi‑Fi or Ethernet, the iPhone on Wi‑Fi from the same router.
 3. Open **AirMirror TV** on the TV. It shows the receiver name, for example *Living Room TV*.
 4. On the iPhone: **Control Center → Screen Mirroring →** pick that name.
 5. To stop, tap **Stop Mirroring** on the iPhone.
@@ -126,7 +126,7 @@ You can also **rename the receiver** in Settings. That's the name iPhones show i
 <details>
 <summary><b>The TV isn't in the iPhone's Screen Mirroring list</b></summary>
 
-- Check that both are on the **same Wi‑Fi** (not a guest network).
+- Check that both are on the **same network** (the same router, not a guest network). The TV can use Wi‑Fi or Ethernet.
 - Turn off *client isolation* / *AP isolation* on the router.
 - Open AirMirror TV once after the TV restarts, so the receiver starts.
 </details>

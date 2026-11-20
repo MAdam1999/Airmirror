@@ -31,7 +31,7 @@
     <string name="settings_none_title">Anyone can connect</string>
     <string name="settings_none_subtitle">No prompt — every device connects automatically.</string>
     <string name="how_to">How to connect</string>
-    <string name="step_1">Connect your iPhone to the same Wi‑Fi as this TV</string>
+    <string name="step_1">Connect your iPhone and this TV to the same network</string>
     <string name="step_2">Open Control Center and tap Screen Mirroring</string>
     <string name="step_3">Pick the name shown here. Your screen and sound appear on the TV</string>
     <string name="pin_dialog_title">Set a PIN</string>
