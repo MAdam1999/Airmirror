@@ -307,7 +307,7 @@ class MirrorService : Service(), MirrorPlayback.Listener, MirrorPlayback.Approva
         return builder
             .setContentTitle(getString(R.string.app_name))
             .setContentText(text)
-            .setSmallIcon(R.drawable.ic_launcher)
+            .setSmallIcon(R.drawable.ic_airplay)
             .setContentIntent(contentIntent)
             .setOngoing(true)
             .build()

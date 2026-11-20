@@ -8,12 +8,12 @@
     <string name="status_error">Could not start: %1$s</string>
     <string name="status_address">TV box address: %1$s</string>
     <string name="name_label">CHOOSE THIS NAME ON YOUR IPHONE</string>
-    <string name="rename">✎  Rename</string>
+    <string name="rename">Rename</string>
     <string name="rename_title">Rename this receiver</string>
     <string name="rename_hint">This is the name your iPhone shows under Screen Mirroring.</string>
     <string name="save">Save</string>
     <string name="reset">Default</string>
-    <string name="rotated">Rotated %1$d°  ·  use ◀ ▶ on the remote</string>
+    <string name="rotated">Rotated %1$d°  ·  press left or right on the remote</string>
     <string name="notif_waiting">Waiting for AirPlay as \"%1$s\"</string>
     <string name="notif_approval">%1$s wants to connect — open the app to allow it</string>
     <string name="approval_title">Allow this device?</string>

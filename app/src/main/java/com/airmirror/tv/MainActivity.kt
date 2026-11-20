@@ -7,10 +7,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
 import android.graphics.Color
-import android.graphics.Outline
 import android.graphics.SurfaceTexture
-import android.graphics.Typeface
-import android.graphics.drawable.GradientDrawable
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
@@ -23,7 +20,6 @@ import android.view.KeyEvent
 import android.view.Surface
 import android.view.TextureView
 import android.view.View
-import android.view.ViewOutlineProvider
 import android.view.WindowManager
 import android.view.inputmethod.EditorInfo
 import android.widget.EditText
@@ -32,7 +28,11 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
-import kotlin.math.roundToInt
+import com.airmirror.tv.MaterialStyle.PRIMARY
+import com.airmirror.tv.MaterialStyle.PRIMARY_CONTAINER
+import com.airmirror.tv.MaterialStyle.TEXT_PRIMARY
+import com.airmirror.tv.MaterialStyle.TEXT_SECONDARY
+import com.airmirror.tv.MaterialStyle.TEXT_TERTIARY
 
 /**
  * Full-screen AirPlay receiver UI. The actual receiver runs in [MirrorService], so it
@@ -46,12 +46,15 @@ class MainActivity : Activity(), MirrorService.UiCallback, TextureView.SurfaceTe
     private lateinit var root: FrameLayout
     private lateinit var surfaceView: TextureView
     private lateinit var overlay: View
+    private lateinit var statusChip: LinearLayout
+    private lateinit var statusIcon: ImageView
     private lateinit var statusView: TextView
     private lateinit var nameView: TextView
+    private lateinit var addressRow: View
     private lateinit var addressView: TextView
-    private lateinit var statusDot: View
     private lateinit var settingsButton: View
-    private lateinit var rotationHint: TextView
+    private lateinit var rotationHint: View
+    private lateinit var rotationText: TextView
     private var rotationDegrees = 0
     private var rightPanel: LinearLayout? = null
     private var showingSettings = false
@@ -103,21 +106,26 @@ class MainActivity : Activity(), MirrorService.UiCallback, TextureView.SurfaceTe
         // The service itself (and the AirPlay receiver in it) keeps running in the background.
     }
 
+    private enum class Status { STARTING, READY, NO_NETWORK }
+
     private fun refreshStatus() {
         val s = service ?: return
         val addresses = s.addresses()
         if (addresses.isEmpty()) {
-            setStatus(getString(R.string.status_no_network), RED)
+            setStatus(getString(R.string.status_no_network), Status.NO_NETWORK)
             nameView.text = ""
             addressView.text = ""
+            addressRow.visibility = View.GONE
             return
         }
         nameView.text = s.name()
         addressView.text = getString(R.string.status_address, TextUtils.join("  ·  ", addresses))
-        setStatus(
-            getString(if (s.isReady()) R.string.status_ready else R.string.status_starting),
-            if (s.isReady()) GREEN else AMBER,
-        )
+        addressRow.visibility = View.VISIBLE
+        if (s.isReady()) {
+            setStatus(getString(R.string.status_ready), Status.READY)
+        } else {
+            setStatus(getString(R.string.status_starting), Status.STARTING)
+        }
     }
 
     // --- MirrorService.UiCallback (always delivered on the main thread) ---
@@ -140,48 +148,34 @@ class MainActivity : Activity(), MirrorService.UiCallback, TextureView.SurfaceTe
 
         val box = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            background = GlassTheme.panel(this@MainActivity, 32f)
-            setPadding(dp(40), dp(36), dp(40), dp(32))
+            gravity = Gravity.CENTER_HORIZONTAL
+            background = MaterialStyle.rounded(this@MainActivity, 28f, MaterialStyle.SURFACE)
+            setPadding(dp(40), dp(36), dp(40), dp(28))
         }
 
-        box.addView(text(24, GlassTheme.TEXT_PRIMARY, true).apply {
-            gravity = Gravity.START
+        box.addView(MaterialStyle.circleIcon(this, R.drawable.ic_smartphone, 64f, 32f, PRIMARY_CONTAINER, PRIMARY))
+        box.addView(space(20))
+        box.addView(text(24, TEXT_PRIMARY, medium = true).apply {
+            gravity = Gravity.CENTER
             setText(R.string.approval_title)
         })
         box.addView(space(12))
-
-        box.addView(text(17, GlassTheme.TEXT_SECONDARY, false).apply {
-            gravity = Gravity.START
+        box.addView(text(17, TEXT_SECONDARY).apply {
+            gravity = Gravity.CENTER
             text = getString(R.string.approval_message, deviceName)
         })
-        box.addView(space(28))
+        box.addView(space(32))
 
         val buttons = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.END
         }
-
-        val deny = text(17, Color.WHITE, true).apply {
-            setText(R.string.approval_deny)
-            isFocusable = true
-            isClickable = true
-            setPadding(dp(28), dp(12), dp(28), dp(12))
-            background = GlassTheme.pillButton(this@MainActivity, 24f)
-        }
+        val deny = MaterialStyle.iconButton(this, R.drawable.ic_close, getString(R.string.approval_deny), filled = false)
+        val allow = MaterialStyle.iconButton(this, R.drawable.ic_check, getString(R.string.approval_allow), filled = true)
         buttons.addView(deny)
-
         buttons.addView(View(this), LinearLayout.LayoutParams(dp(16), 1))
-
-        val allow = text(17, Color.WHITE, true).apply {
-            setText(R.string.approval_allow)
-            isFocusable = true
-            isClickable = true
-            setPadding(dp(28), dp(12), dp(28), dp(12))
-            background = GlassTheme.panelAccent(this@MainActivity, 24f, ACCENT)
-        }
         buttons.addView(allow)
-
-        box.addView(buttons)
+        box.addView(buttons, LinearLayout.LayoutParams(MATCH, WRAP))
 
         val dialog = AlertDialog.Builder(this)
             .setView(box)
@@ -242,7 +236,7 @@ class MainActivity : Activity(), MirrorService.UiCallback, TextureView.SurfaceTe
     private fun rotate(deltaDegrees: Int) {
         rotationDegrees = ((rotationDegrees + deltaDegrees) % 360 + 360) % 360
         layoutVideo()
-        rotationHint.text = getString(R.string.rotated, rotationDegrees)
+        rotationText.text = getString(R.string.rotated, rotationDegrees)
         rotationHint.visibility = View.VISIBLE
         mainHandler.removeCallbacksAndMessages(null)
         mainHandler.postDelayed({ rotationHint.visibility = View.GONE }, 1500)
@@ -251,25 +245,31 @@ class MainActivity : Activity(), MirrorService.UiCallback, TextureView.SurfaceTe
     // --- UI ---
 
     private fun buildUi() {
+        // Letterbox bars around the mirrored picture stay black, like any video player.
         root = FrameLayout(this).apply { setBackgroundColor(Color.BLACK) }
 
         surfaceView = TextureView(this).apply { surfaceTextureListener = this@MainActivity }
         root.addView(surfaceView, FrameLayout.LayoutParams(MATCH, MATCH, Gravity.CENTER))
         root.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ -> layoutVideo() }
 
-        rotationHint = text(18, Color.WHITE, true).apply {
-            background = GlassTheme.panel(this@MainActivity, 24f)
-            setPadding(dp(24), dp(12), dp(24), dp(12))
+        // Rotation hint: a white Material pill with the screen-rotation icon.
+        rotationText = text(17, TEXT_PRIMARY, medium = true)
+        rotationHint = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            background = MaterialStyle.rounded(this@MainActivity, 28f, MaterialStyle.SURFACE)
+            setPadding(dp(20), dp(12), dp(24), dp(12))
+            addView(MaterialStyle.icon(this@MainActivity, R.drawable.ic_screen_rotation, PRIMARY), iconLp(22, 12))
+            addView(rotationText)
             visibility = View.GONE
         }
+        MaterialStyle.elevate(this, rotationHint, 6f)
         val hintLp = FrameLayout.LayoutParams(WRAP, WRAP, Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL)
         hintLp.bottomMargin = dp(48)
         root.addView(rotationHint, hintLp)
 
-        // Idle screen: a colourful glass backdrop with brand + receiver name on the left and
-        // how-to steps on the right, each floating as its own translucent glass panel.
-        val backdrop = FrameLayout(this)
-        backdrop.addView(GlassTheme.buildBackground(this), FrameLayout.LayoutParams(MATCH, MATCH))
+        // Idle screen: white Material cards on a light background.
+        val backdrop = FrameLayout(this).apply { setBackgroundColor(MaterialStyle.BACKGROUND) }
 
         val panel = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -277,99 +277,89 @@ class MainActivity : Activity(), MirrorService.UiCallback, TextureView.SurfaceTe
             setPadding(dp(72), dp(40), dp(72), dp(40))
         }
 
-        // Left column
+        // Left card
         val left = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER_VERTICAL
-            background = GlassTheme.panel(this@MainActivity, 32f)
+            background = MaterialStyle.card(this@MainActivity, 28f)
             setPadding(dp(40), dp(36), dp(40), dp(36))
         }
+        MaterialStyle.elevate(this, left, 3f)
 
         val brand = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
         }
-        val logo = ImageView(this).apply {
-            setImageResource(R.drawable.ic_launcher)
-            clipToOutline = true
-            outlineProvider = object : ViewOutlineProvider() {
-                override fun getOutline(view: View, outline: Outline) {
-                    outline.setRoundRect(0, 0, view.width, view.height, dp(18).toFloat())
-                }
-            }
-        }
-        brand.addView(logo, LinearLayout.LayoutParams(dp(64), dp(64)))
+        brand.addView(MaterialStyle.circleIcon(this, R.drawable.ic_airplay, 64f, 34f, PRIMARY, Color.WHITE))
         val titles = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(16), 0, 0, 0)
+            setPadding(dp(18), 0, 0, 0)
         }
-        titles.addView(text(34, GlassTheme.TEXT_PRIMARY, true).apply {
-            gravity = Gravity.START
-            setText(R.string.app_name)
-        })
-        titles.addView(text(16, GlassTheme.TEXT_TERTIARY, false).apply {
-            gravity = Gravity.START
-            setText(R.string.tagline)
-        })
+        titles.addView(text(32, TEXT_PRIMARY, medium = true).apply { setText(R.string.app_name) })
+        titles.addView(space(6))
+        titles.addView(text(16, TEXT_SECONDARY).apply { setText(R.string.tagline) })
         brand.addView(titles)
         left.addView(brand)
-        left.addView(space(32))
-
-        // Status chip
-        val chip = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            background = GlassTheme.panelDim(this@MainActivity, 24f)
-            setPadding(dp(16), dp(8), dp(20), dp(8))
-        }
-        statusDot = View(this).apply { background = oval(AMBER) }
-        val dotLp = LinearLayout.LayoutParams(dp(12), dp(12))
-        dotLp.rightMargin = dp(10)
-        chip.addView(statusDot, dotLp)
-        statusView = text(18, GlassTheme.TEXT_SECONDARY, false).apply { gravity = Gravity.START }
-        chip.addView(statusView)
-        left.addView(chip, LinearLayout.LayoutParams(WRAP, WRAP))
         left.addView(space(28))
 
-        // Receiver name card
-        left.addView(text(14, GlassTheme.TEXT_TERTIARY, false).apply {
-            gravity = Gravity.START
-            letterSpacing = 0.15f
+        // Status chip: Material icon + label on a tinted container
+        statusIcon = MaterialStyle.icon(this, R.drawable.ic_hourglass_empty, MaterialStyle.AMBER)
+        statusView = text(17, MaterialStyle.AMBER, medium = true)
+        statusChip = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            background = MaterialStyle.rounded(this@MainActivity, 20f, MaterialStyle.AMBER_CONTAINER)
+            setPadding(dp(14), dp(8), dp(18), dp(8))
+            addView(statusIcon, iconLp(20, 8))
+            addView(statusView)
+        }
+        left.addView(statusChip, LinearLayout.LayoutParams(WRAP, WRAP))
+        left.addView(space(28))
+
+        // Receiver name
+        left.addView(text(13, TEXT_TERTIARY, medium = true).apply {
+            letterSpacing = 0.12f
             setText(R.string.name_label)
         })
-        left.addView(space(8))
-        nameView = text(48, GlassTheme.TEXT_PRIMARY, true).apply {
-            gravity = Gravity.CENTER_VERTICAL
+        left.addView(space(10))
+        nameView = text(44, MaterialStyle.PRIMARY_DARK, medium = true).apply {
             isSingleLine = true
             ellipsize = TextUtils.TruncateAt.END
-            background = GlassTheme.panelAccent(this@MainActivity, 22f, ACCENT)
-            setPadding(dp(28), dp(16), dp(28), dp(16))
+            background = MaterialStyle.rounded(this@MainActivity, 20f, PRIMARY_CONTAINER)
+            setPadding(dp(28), dp(18), dp(28), dp(18))
         }
         left.addView(nameView, LinearLayout.LayoutParams(MATCH, WRAP))
-        left.addView(space(16))
+        left.addView(space(20))
 
-        val settings = pillButton(R.string.settings)
+        val settings = MaterialStyle.iconButton(this, R.drawable.ic_settings, getString(R.string.settings), filled = false)
         settings.setOnClickListener {
             showingSettings = !showingSettings
             rebuildRightPanel()
         }
         left.addView(settings, LinearLayout.LayoutParams(WRAP, WRAP))
         settingsButton = settings // first thing OK on the remote should reach
-        left.addView(space(16))
+        left.addView(space(20))
 
-        addressView = text(14, GlassTheme.TEXT_TERTIARY, false).apply { gravity = Gravity.START }
-        left.addView(addressView)
+        addressView = text(14, TEXT_SECONDARY)
+        addressRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            addView(MaterialStyle.icon(this@MainActivity, R.drawable.ic_wifi, TEXT_TERTIARY), iconLp(18, 8))
+            addView(addressView)
+        }
+        left.addView(addressRow)
 
         panel.addView(left, LinearLayout.LayoutParams(0, WRAP, 1f))
-        panel.addView(View(this), LinearLayout.LayoutParams(dp(64), 1))
+        panel.addView(View(this), LinearLayout.LayoutParams(dp(48), 1))
 
-        // Right column: either "how to connect" or Settings, toggled by the button above -
+        // Right card: either "how to connect" or Settings, toggled by the button above -
         // one screen instead of a separate Settings Activity to navigate to and back from.
         val right = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            background = GlassTheme.panel(this@MainActivity, 32f)
+            background = MaterialStyle.card(this@MainActivity, 28f)
             setPadding(dp(36), dp(32), dp(36), dp(32))
         }
+        MaterialStyle.elevate(this, right, 3f)
         rightPanel = right
         panel.addView(right, LinearLayout.LayoutParams(0, WRAP, 1f))
         rebuildRightPanel()
@@ -393,35 +383,28 @@ class MainActivity : Activity(), MirrorService.UiCallback, TextureView.SurfaceTe
     }
 
     private fun buildHowToConnectPanel(into: LinearLayout) {
-        into.addView(text(22, GlassTheme.TEXT_PRIMARY, true).apply {
-            gravity = Gravity.START
-            setText(R.string.how_to)
-        })
+        into.addView(text(22, TEXT_PRIMARY, medium = true).apply { setText(R.string.how_to) })
         into.addView(space(20))
-        into.addView(step(1, getString(R.string.step_1)))
-        into.addView(step(2, getString(R.string.step_2)))
-        into.addView(step(3, getString(R.string.step_3)))
+        into.addView(step(R.drawable.ic_wifi, getString(R.string.step_1)))
+        into.addView(step(R.drawable.ic_cast, getString(R.string.step_2)))
+        into.addView(step(R.drawable.ic_tv, getString(R.string.step_3)))
     }
 
     private fun buildSettingsPanel(into: LinearLayout) {
-        into.addView(text(22, GlassTheme.TEXT_PRIMARY, true).apply {
-            gravity = Gravity.START
-            setText(R.string.settings_title)
-        })
+        into.addView(text(22, TEXT_PRIMARY, medium = true).apply { setText(R.string.settings_title) })
         into.addView(space(20))
 
         val s = service ?: return
         val current = s.connectMode()
 
         into.addView(
-            settingsRow(R.string.rename_title, getString(R.string.settings_rename_subtitle, s.name())) {
+            settingsRow(R.drawable.ic_edit, R.string.rename_title, getString(R.string.settings_rename_subtitle, s.name())) {
                 showRenameDialog()
             },
         )
         into.addView(space(24))
 
-        into.addView(text(13, GlassTheme.TEXT_TERTIARY, false).apply {
-            gravity = Gravity.START
+        into.addView(text(13, TEXT_TERTIARY, medium = true).apply {
             letterSpacing = 0.1f
             setText(R.string.settings_connect_section)
         })
@@ -429,86 +412,85 @@ class MainActivity : Activity(), MirrorService.UiCallback, TextureView.SurfaceTe
 
         into.addView(
             settingsOption(
-                MirrorService.MODE_APPROVAL, R.string.settings_approval_title, R.string.settings_approval_subtitle, current,
+                MirrorService.MODE_APPROVAL, R.drawable.ic_verified_user,
+                R.string.settings_approval_title, R.string.settings_approval_subtitle, current,
             ),
         )
-        into.addView(space(12))
+        into.addView(space(10))
         into.addView(
-            settingsOption(MirrorService.MODE_PIN, R.string.settings_pin_title, R.string.settings_pin_subtitle, current),
+            settingsOption(
+                MirrorService.MODE_PIN, R.drawable.ic_lock,
+                R.string.settings_pin_title, R.string.settings_pin_subtitle, current,
+            ),
         )
-        into.addView(space(12))
+        into.addView(space(10))
         into.addView(
-            settingsOption(MirrorService.MODE_NONE, R.string.settings_none_title, R.string.settings_none_subtitle, current),
+            settingsOption(
+                MirrorService.MODE_NONE, R.drawable.ic_lock_open,
+                R.string.settings_none_title, R.string.settings_none_subtitle, current,
+            ),
         )
     }
 
-    private fun settingsRow(titleRes: Int, subtitle: String, onClick: View.OnClickListener): View {
+    /** A Material list row: leading icon, two lines of text, trailing icon. */
+    private fun listRow(
+        leadingIcon: Int,
+        leadingTint: Int,
+        title: CharSequence,
+        subtitle: CharSequence,
+        trailingIcon: Int?,
+        trailingTint: Int,
+        selected: Boolean,
+    ): LinearLayout {
         val row = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
             isFocusable = true
             isClickable = true
-            setPadding(dp(20), dp(16), dp(20), dp(16))
-            background = GlassTheme.focusableRow(this@MainActivity, 18f)
+            setPadding(dp(18), dp(14), dp(18), dp(14))
+            background = if (selected) {
+                MaterialStyle.focusableRow(this@MainActivity, 16f, PRIMARY_CONTAINER, PRIMARY_CONTAINER)
+            } else {
+                MaterialStyle.focusableRow(this@MainActivity, 16f)
+            }
         }
+        row.addView(MaterialStyle.icon(this, leadingIcon, leadingTint), iconLp(24, 18))
 
         val texts = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        texts.addView(text(18, GlassTheme.TEXT_PRIMARY, true).apply {
-            gravity = Gravity.START
-            setText(titleRes)
-        })
-        texts.addView(text(13, GlassTheme.TEXT_SECONDARY, false).apply {
-            gravity = Gravity.START
-            text = subtitle
-        })
+        texts.addView(text(18, TEXT_PRIMARY, medium = true).apply { text = title })
+        texts.addView(space(4))
+        texts.addView(text(14, TEXT_SECONDARY).apply { text = subtitle })
         row.addView(texts, LinearLayout.LayoutParams(0, WRAP, 1f))
 
-        val chevron = text(20, GlassTheme.TEXT_TERTIARY, false).apply { text = "›" }
-        row.addView(chevron, LinearLayout.LayoutParams(dp(22), WRAP))
-
-        row.setOnClickListener(onClick)
+        if (trailingIcon != null) {
+            row.addView(MaterialStyle.icon(this, trailingIcon, trailingTint), iconLp(24, 0).apply { leftMargin = dp(12) })
+        }
         return row
     }
 
-    /** One selectable row for a connect mode; the PIN row is shown but not yet selectable. */
-    private fun settingsOption(mode: String, titleRes: Int, subtitleRes: Int, current: String): View {
+    private fun settingsRow(iconRes: Int, titleRes: Int, subtitle: String, onClick: View.OnClickListener): View =
+        listRow(iconRes, PRIMARY, getString(titleRes), subtitle, R.drawable.ic_chevron_right, TEXT_TERTIARY, false)
+            .apply { setOnClickListener(onClick) }
+
+    /** One selectable row for a connect mode (Material radio); the PIN row is shown but not yet selectable. */
+    private fun settingsOption(mode: String, iconRes: Int, titleRes: Int, subtitleRes: Int, current: String): View {
         val selected = mode == current
         val comingSoon = mode == MirrorService.MODE_PIN
-
-        val row = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            isFocusable = true
-            isClickable = true
-            setPadding(dp(20), dp(16), dp(20), dp(16))
-            background = if (selected) {
-                GlassTheme.panelAccent(this@MainActivity, 18f, ACCENT)
-            } else {
-                GlassTheme.panelDim(this@MainActivity, 18f)
-            }
-            alpha = if (comingSoon) 0.6f else 1f
+        val subtitle = if (comingSoon) {
+            getString(subtitleRes) + getString(R.string.settings_coming_soon_suffix)
+        } else {
+            getString(subtitleRes)
         }
-
-        val texts = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        texts.addView(text(18, GlassTheme.TEXT_PRIMARY, true).apply {
-            gravity = Gravity.START
-            setText(titleRes)
-        })
-        texts.addView(text(13, GlassTheme.TEXT_SECONDARY, false).apply {
-            gravity = Gravity.START
-            text = if (comingSoon) {
-                getString(subtitleRes) + getString(R.string.settings_coming_soon_suffix)
-            } else {
-                getString(subtitleRes)
-            }
-        })
-        row.addView(texts, LinearLayout.LayoutParams(0, WRAP, 1f))
-
-        if (selected) {
-            val mark = text(20, Color.WHITE, true).apply { text = "✓" }
-            row.addView(mark, LinearLayout.LayoutParams(dp(28), WRAP))
-        }
-
+        val row = listRow(
+            iconRes,
+            if (selected) PRIMARY else TEXT_SECONDARY,
+            getString(titleRes),
+            subtitle,
+            if (selected) R.drawable.ic_radio_button_checked else R.drawable.ic_radio_button_unchecked,
+            if (selected) PRIMARY else TEXT_TERTIARY,
+            selected,
+        )
+        row.alpha = if (comingSoon) 0.55f else 1f
         row.setOnClickListener {
             if (comingSoon) {
                 Toast.makeText(this, R.string.settings_pin_toast, Toast.LENGTH_SHORT).show()
@@ -528,16 +510,17 @@ class MainActivity : Activity(), MirrorService.UiCallback, TextureView.SurfaceTe
             setText(service?.name() ?: "")
             setSelectAllOnFocus(true)
             filters = arrayOf<InputFilter>(InputFilter.LengthFilter(32))
-            setTextColor(GlassTheme.TEXT_PRIMARY)
-            setHintTextColor(GlassTheme.TEXT_TERTIARY)
-            background = GlassTheme.panelDim(this@MainActivity, 16f)
-            setPadding(dp(18), dp(12), dp(18), dp(12))
+            setTextColor(TEXT_PRIMARY)
+            setHintTextColor(TEXT_TERTIARY)
+            background = MaterialStyle.focusableRow(this@MainActivity, 12f)
+            setPadding(dp(18), dp(14), dp(18), dp(14))
         }
         val pad = dp(24)
         val box = FrameLayout(this).apply { setPadding(pad, dp(8), pad, 0) }
         box.addView(input)
         input.imeOptions = EditorInfo.IME_ACTION_DONE
-        val dialog = AlertDialog.Builder(this)
+        val dialog = AlertDialog.Builder(this, R.style.AppDialog)
+            .setIcon(R.drawable.ic_edit)
             .setTitle(R.string.rename_title)
             .setMessage(R.string.rename_hint)
             .setView(box)
@@ -611,66 +594,45 @@ class MainActivity : Activity(), MirrorService.UiCallback, TextureView.SurfaceTe
         }
     }
 
-    /** A small remote-focusable glass pill button, styled like Rename/Settings. */
-    private fun pillButton(textRes: Int): TextView = text(18, Color.WHITE, true).apply {
-        setText(textRes)
-        isFocusable = true
-        isClickable = true
-        setPadding(dp(28), dp(12), dp(28), dp(12))
-        background = GlassTheme.pillButton(this@MainActivity, 28f)
-    }
-
-    private fun text(sp: Int, color: Int, bold: Boolean): TextView = TextView(this).apply {
-        textSize = sp.toFloat()
-        setTextColor(color)
-        gravity = Gravity.CENTER
-        if (bold) typeface = Typeface.DEFAULT_BOLD
-    }
-
-    private fun space(heightDp: Int): View = View(this).apply {
-        layoutParams = LinearLayout.LayoutParams(1, dp(heightDp))
-    }
-
-    private fun setStatus(message: String, color: Int) {
+    private fun setStatus(message: String, status: Status) {
+        val (iconRes, color, container) = when (status) {
+            Status.READY -> Triple(R.drawable.ic_check_circle, MaterialStyle.GREEN, MaterialStyle.GREEN_CONTAINER)
+            Status.STARTING -> Triple(R.drawable.ic_hourglass_empty, MaterialStyle.AMBER, MaterialStyle.AMBER_CONTAINER)
+            Status.NO_NETWORK -> Triple(R.drawable.ic_wifi_off, MaterialStyle.RED, MaterialStyle.RED_CONTAINER)
+        }
         statusView.text = message
-        statusDot.background = oval(color)
+        statusView.setTextColor(color)
+        statusIcon.setImageResource(iconRes)
+        statusIcon.imageTintList = android.content.res.ColorStateList.valueOf(color)
+        statusChip.background = MaterialStyle.rounded(this, 20f, container)
     }
 
-    private fun oval(color: Int): GradientDrawable = GradientDrawable().apply {
-        shape = GradientDrawable.OVAL
-        setColor(color)
-    }
-
-    /** One numbered row of the how-to list. */
-    private fun step(number: Int, message: String): View {
+    /** One row of the how-to list: a Material icon in a tonal circle, then the instruction. */
+    private fun step(iconRes: Int, message: String): View {
         val row = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(0, dp(8), 0, dp(8))
+            setPadding(0, dp(10), 0, dp(10))
         }
-        val badge = text(18, Color.WHITE, true).apply {
-            text = number.toString()
-            background = oval(ACCENT)
-        }
-        val badgeLp = LinearLayout.LayoutParams(dp(40), dp(40))
-        badgeLp.rightMargin = dp(18)
-        row.addView(badge, badgeLp)
-        val label = text(19, GlassTheme.TEXT_SECONDARY, false).apply {
-            gravity = Gravity.START
-            text = message
-        }
-        row.addView(label, LinearLayout.LayoutParams(0, WRAP, 1f))
+        row.addView(MaterialStyle.circleIcon(this, iconRes, 48f, 24f, PRIMARY_CONTAINER, PRIMARY).apply {
+            (layoutParams as LinearLayout.LayoutParams).rightMargin = dp(20)
+        })
+        row.addView(text(18, TEXT_PRIMARY).apply { text = message }, LinearLayout.LayoutParams(0, WRAP, 1f))
         return row
     }
 
-    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).roundToInt()
+    private fun iconLp(sizeDp: Int, endMarginDp: Int) = LinearLayout.LayoutParams(dp(sizeDp), dp(sizeDp)).apply {
+        rightMargin = dp(endMarginDp)
+    }
+
+    private fun text(sp: Int, color: Int, medium: Boolean = false): TextView =
+        MaterialStyle.text(this, sp.toFloat(), color, medium)
+
+    private fun space(heightDp: Int): View = MaterialStyle.space(this, heightDp)
+
+    private fun dp(value: Int): Int = MaterialStyle.dp(this, value.toFloat())
 
     private companion object {
-        val AMBER = GlassTheme.AMBER
-        val GREEN = GlassTheme.GREEN
-        val RED = GlassTheme.RED
-        val ACCENT = GlassTheme.ACCENT
-
         const val MATCH = LinearLayout.LayoutParams.MATCH_PARENT
         const val WRAP = LinearLayout.LayoutParams.WRAP_CONTENT
     }
