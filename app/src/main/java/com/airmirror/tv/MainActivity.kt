@@ -84,6 +84,9 @@ class MainActivity : Activity(), MirrorService.UiCallback, TextureView.SurfaceTe
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        MaterialStyle.apply(this, themeSetting())
+        window.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(MaterialStyle.BACKGROUND))
+        showingSettings = savedInstanceState?.getBoolean(STATE_SETTINGS) ?: false
         buildUi()
         val intent = Intent(this, MirrorService::class.java)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -290,7 +293,7 @@ class MainActivity : Activity(), MirrorService.UiCallback, TextureView.SurfaceTe
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
         }
-        brand.addView(MaterialStyle.circleIcon(this, R.drawable.ic_airplay, 64f, 34f, PRIMARY, Color.WHITE))
+        brand.addView(MaterialStyle.circleIcon(this, R.drawable.ic_airplay, 64f, 34f, PRIMARY, MaterialStyle.ON_PRIMARY))
         val titles = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(18), 0, 0, 0)
@@ -356,12 +359,18 @@ class MainActivity : Activity(), MirrorService.UiCallback, TextureView.SurfaceTe
         // one screen instead of a separate Settings Activity to navigate to and back from.
         val right = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            background = MaterialStyle.card(this@MainActivity, 28f)
             setPadding(dp(36), dp(32), dp(36), dp(32))
         }
-        MaterialStyle.elevate(this, right, 3f)
+        // Settings can be taller than the screen; the card scrolls as the remote moves focus.
+        val rightCard = android.widget.ScrollView(this).apply {
+            background = MaterialStyle.card(this@MainActivity, 28f)
+            isVerticalScrollBarEnabled = false
+            clipToOutline = true
+            addView(right)
+        }
+        MaterialStyle.elevate(this, rightCard, 3f)
         rightPanel = right
-        panel.addView(right, LinearLayout.LayoutParams(0, WRAP, 1f))
+        panel.addView(rightCard, LinearLayout.LayoutParams(0, WRAP, 1f))
         rebuildRightPanel()
 
         backdrop.addView(panel, FrameLayout.LayoutParams(MATCH, MATCH))
@@ -440,6 +449,56 @@ class MainActivity : Activity(), MirrorService.UiCallback, TextureView.SurfaceTe
                 },
             )
         }
+
+        into.addView(space(24))
+        into.addView(text(13, TEXT_TERTIARY, medium = true).apply {
+            letterSpacing = 0.1f
+            setText(R.string.settings_appearance_section)
+        })
+        into.addView(space(10))
+        val theme = themeSetting()
+        val themeIcon = when (theme) {
+            MaterialStyle.THEME_DARK -> R.drawable.ic_dark_mode
+            MaterialStyle.THEME_AUTO -> R.drawable.ic_brightness_auto
+            else -> R.drawable.ic_light_mode
+        }
+        into.addView(
+            settingsRow(themeIcon, R.string.appearance_title, getString(themeLabel(theme))) { showThemeDialog() },
+        )
+    }
+
+    // --- Appearance (light / dark / automatic) ---
+
+    private fun themeSetting(): String =
+        getSharedPreferences("receiver", MODE_PRIVATE).getString("theme", MaterialStyle.THEME_LIGHT)
+            ?: MaterialStyle.THEME_LIGHT
+
+    private fun themeLabel(theme: String): Int = when (theme) {
+        MaterialStyle.THEME_DARK -> R.string.theme_dark
+        MaterialStyle.THEME_AUTO -> R.string.theme_auto
+        else -> R.string.theme_light
+    }
+
+    private fun showThemeDialog() {
+        val themes = arrayOf(MaterialStyle.THEME_LIGHT, MaterialStyle.THEME_DARK, MaterialStyle.THEME_AUTO)
+        val labels = themes.map { getString(themeLabel(it)) }.toTypedArray()
+        AlertDialog.Builder(this, MaterialStyle.DIALOG_STYLE)
+            .setIcon(if (MaterialStyle.isDark) R.drawable.ic_dark_mode else R.drawable.ic_light_mode)
+            .setTitle(R.string.appearance_title)
+            .setSingleChoiceItems(labels, themes.indexOf(themeSetting()).coerceAtLeast(0)) { dialog, which ->
+                dialog.dismiss()
+                if (themes[which] != themeSetting()) {
+                    getSharedPreferences("receiver", MODE_PRIVATE).edit().putString("theme", themes[which]).apply()
+                    recreate() // rebuild every view with the new palette; Settings stays open
+                }
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putBoolean(STATE_SETTINGS, showingSettings)
     }
 
     /** A Material list row: leading icon, two lines of text, trailing icon. */
@@ -526,7 +585,7 @@ class MainActivity : Activity(), MirrorService.UiCallback, TextureView.SurfaceTe
         val box = FrameLayout(this).apply { setPadding(dp(24), dp(8), dp(24), 0) }
         box.addView(input)
 
-        val dialog = AlertDialog.Builder(this, R.style.AppDialog)
+        val dialog = AlertDialog.Builder(this, MaterialStyle.DIALOG_STYLE)
             .setIcon(R.drawable.ic_lock)
             .setTitle(R.string.pin_dialog_title)
             .setMessage(R.string.pin_dialog_message)
@@ -573,7 +632,7 @@ class MainActivity : Activity(), MirrorService.UiCallback, TextureView.SurfaceTe
         val box = FrameLayout(this).apply { setPadding(pad, dp(8), pad, 0) }
         box.addView(input)
         input.imeOptions = EditorInfo.IME_ACTION_DONE
-        val dialog = AlertDialog.Builder(this, R.style.AppDialog)
+        val dialog = AlertDialog.Builder(this, MaterialStyle.DIALOG_STYLE)
             .setIcon(R.drawable.ic_edit)
             .setTitle(R.string.rename_title)
             .setMessage(R.string.rename_hint)
@@ -687,6 +746,7 @@ class MainActivity : Activity(), MirrorService.UiCallback, TextureView.SurfaceTe
     private fun dp(value: Int): Int = MaterialStyle.dp(this, value.toFloat())
 
     private companion object {
+        const val STATE_SETTINGS = "showing_settings"
         const val MATCH = LinearLayout.LayoutParams.MATCH_PARENT
         const val WRAP = LinearLayout.LayoutParams.WRAP_CONTENT
     }

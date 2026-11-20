@@ -11,8 +11,8 @@ android {
         applicationId = "com.airmirror.tv"
         minSdk = 21
         targetSdk = 34
-        versionCode = 19
-        versionName = "1.18"
+        versionCode = 20
+        versionName = "1.19"
     }
 
     // Two APKs from the same code: one for old TV boxes, one for current Android.

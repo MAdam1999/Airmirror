@@ -40,4 +40,9 @@
     <string name="pin_saved">PIN saved. iPhones must now enter it to mirror.</string>
     <string name="change_pin_title">Change PIN</string>
     <string name="change_pin_subtitle">A %1$d-digit PIN is set</string>
+    <string name="settings_appearance_section">APPEARANCE</string>
+    <string name="appearance_title">Theme</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="theme_auto">Automatic (follow the TV)</string>
 </resources>

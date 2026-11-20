@@ -71,7 +71,7 @@ Keeps running in the background after you close it, and comes to the front when 
 <td valign="top">
 
 **🕰️ Old boxes welcome**<br>
-Runs on Android 5.0 Lollipop and newer, with no Google services needed.
+Runs on Android 5.0 Lollipop and newer, with no Google services needed. Light, dark or automatic theme.
 
 </td>
 </tr>
@@ -111,13 +111,13 @@ Open **Settings** on the home screen (it's the first button the remote lands on)
 > [!NOTE]
 > In PIN mode, video casting from an app's own AirPlay button (YouTube and similar) still shows **Allow / Deny** on the TV, because iOS doesn't ask for the AirPlay password for casting.
 
-You can also **rename the receiver** in Settings. That's the name iPhones show in Screen Mirroring.
+You can also **rename the receiver** (the name iPhones show in Screen Mirroring) and pick a **theme**: Light, Dark, or Automatic, which follows the TV's own dark-mode setting.
 
 ## 🎮 Remote control
 
 | Button | Does |
 |---|---|
-| **OK** on Settings | Opens Settings (rename, who can connect, PIN) |
+| **OK** on Settings | Opens Settings (rename, who can connect, PIN, theme) |
 | **◀ ▶** while mirroring | Rotates the picture 90° |
 | **Back** | Leaves the app. The receiver keeps listening in the background. |
 

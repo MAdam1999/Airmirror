@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Material Design light theme (white surfaces, Google Blue accent). -->
+    <!-- Material Design light theme (white surfaces, Google Blue accent). The app also has a
+         dark palette; MainActivity paints its own views from MaterialStyle at runtime. -->
     <style name="AppTheme" parent="@android:style/Theme.Material.Light.NoActionBar.Fullscreen">
         <item name="android:windowBackground">@color/background</item>
         <item name="android:colorPrimary">@color/primary</item>
@@ -14,5 +15,12 @@
     <style name="AppDialog" parent="@android:style/Theme.Material.Light.Dialog.Alert">
         <item name="android:colorAccent">@color/primary</item>
         <item name="android:colorPrimary">@color/primary</item>
+    </style>
+
+    <!-- Material dark dialogs (Grey 900 surface, Blue 200 accent). -->
+    <style name="AppDialogDark" parent="@android:style/Theme.Material.Dialog.Alert">
+        <item name="android:colorAccent">@color/primary_dark_theme</item>
+        <item name="android:colorPrimary">@color/primary_dark_theme</item>
+        <item name="android:colorBackground">@color/surface_dark_theme</item>
     </style>
 </resources>

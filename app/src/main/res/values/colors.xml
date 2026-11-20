@@ -6,4 +6,6 @@
     <color name="primary_dark">#FF1967D2</color>
     <color name="on_surface">#FF202124</color>
     <color name="on_surface_variant">#FF5F6368</color>
+    <color name="primary_dark_theme">#FF8AB4F8</color>
+    <color name="surface_dark_theme">#FF292A2D</color>
 </resources>
