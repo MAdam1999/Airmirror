@@ -51,5 +51,5 @@ object AirPlayKeyLabels {
     /** `DataStream-Salt` + unsigned decimal `streamConnectionID`. */
     @JvmStatic
     fun dataStreamSalt(streamConnectionId: Long): String =
-        DATA_STREAM_SALT_PREFIX + java.lang.Long.toUnsignedString(streamConnectionId)
+        DATA_STREAM_SALT_PREFIX + streamConnectionId.toULong().toString()
 }

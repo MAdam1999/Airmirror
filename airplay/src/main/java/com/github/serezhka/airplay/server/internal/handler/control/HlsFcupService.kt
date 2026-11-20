@@ -290,7 +290,7 @@ class HlsFcupService(
         val eventContext = session.reverseContexts["event"]
         if (eventContext == null || !eventContext.channel().isActive) return
         val body = playbackStateBody(session, state)
-        val queue = reverseQueues.computeIfAbsent(session.id) { ReverseQueue() }
+        val queue = reverseQueues.getOrPut(session.id) { ReverseQueue() }
         synchronized(queue) {
             if (queue.inFlight || queue.pending.isNotEmpty()) return
             queue.pending.add(body)
@@ -363,7 +363,7 @@ class HlsFcupService(
     }
 
     private fun enqueueReverseEvent(session: Session, body: ByteArray) {
-        val queue = reverseQueues.computeIfAbsent(session.id) { ReverseQueue() }
+        val queue = reverseQueues.getOrPut(session.id) { ReverseQueue() }
         synchronized(queue) {
             queue.pending.add(body)
             flushReverseQueue(session, queue)

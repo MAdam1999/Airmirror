@@ -68,7 +68,7 @@ class RtspMediaSetup {
                 if (stream.containsKey("streamConnectionID")) {
                     val rawId = stream["streamConnectionID"]
                     val id = if (rawId is Number) rawId.toLong() else rawId.toString().toLong()
-                    streamConnectionID = java.lang.Long.toUnsignedString(id)
+                    streamConnectionID = id.toULong().toString() // unsigned, works on every API level
                 }
                 VideoStreamInfo(streamConnectionID)
             }

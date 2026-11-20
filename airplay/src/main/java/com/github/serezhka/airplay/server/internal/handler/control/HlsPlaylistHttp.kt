@@ -23,7 +23,6 @@ import io.netty.handler.codec.http.HttpUtil
 import io.netty.handler.codec.http.HttpVersion
 import io.netty.handler.codec.http.QueryStringDecoder
 import org.slf4j.LoggerFactory
-import java.util.Base64
 import java.util.concurrent.TimeUnit
 
 /**
@@ -56,8 +55,8 @@ internal class HlsPlaylistHttp(
             }
             return
         }
-        val fcupResponseBase64 = (data as NSData).base64EncodedData
-        val fcupResponse = String(Base64.getDecoder().decode(fcupResponseBase64), Charsets.UTF_8)
+        // NSData already holds the decoded bytes (java.util.Base64 needs Android 8+).
+        val fcupResponse = String((data as NSData).bytes(), Charsets.UTF_8)
         log.debug("FCUP response: url={}, bytes={}, session={}", fcupResponseURL, fcupResponse.length, session.id)
 
         var body: String

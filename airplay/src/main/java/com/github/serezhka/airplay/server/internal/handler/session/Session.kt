@@ -17,13 +17,13 @@ class Session internal constructor(val id: String, identity: PairingIdentity) {
     val audioServer = AudioServer(airPlay)
     val audioControlServer = AudioControlServer()
     val reverseContexts: MutableMap<String, ChannelHandlerContext> = ConcurrentHashMap()
-    val playlistRequests: MutableMap<String, Queue<PlaylistRequest>> = ConcurrentHashMap()
+    val playlistRequests = ConcurrentHashMap<String, Queue<PlaylistRequest>>()
 
     @Volatile
     var hlsPlaylistState: HlsPlaylistState? = null
 
     fun enqueuePlaylistRequest(remoteUri: String, request: PlaylistRequest) {
-        playlistRequests.computeIfAbsent(remoteUri) { ConcurrentLinkedQueue() }.add(request)
+        playlistRequests.getOrPut(remoteUri) { ConcurrentLinkedQueue() }.add(request)
     }
 
     fun pollPlaylistRequest(remoteUri: String): PlaylistRequest? = playlistRequests[remoteUri]?.poll()

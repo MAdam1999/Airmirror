@@ -57,7 +57,7 @@ class ControlHandler(
                 log.info("Reverse event channel closed, stopping HLS session {}", session.id)
                 hlsSession.stopHlsPlayback(session)
             }
-            reverse.entries.removeIf { it.value === ctx }
+            reverse.values.toList().forEach { if (it === ctx) reverse.values.remove(it) }
         }
         super.channelInactive(ctx)
     }
