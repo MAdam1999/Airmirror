@@ -121,6 +121,41 @@ You can also **rename the receiver** in Settings. That's the name iPhones show i
 | **◀ ▶** while mirroring | Rotates the picture 90° |
 | **Back** | Leaves the app. The receiver keeps listening in the background. |
 
+## 🌐 Network
+
+### What you need
+
+- The TV and the iPhone on the **same local network**, meaning the same router. The TV can use **Wi‑Fi or Ethernet**; Ethernet gives the smoothest picture.
+- **IPv4.** The receiver listens on the TV's IPv4 addresses.
+- The router must let devices see each other:
+  - **Client isolation / AP isolation off.**
+  - **No guest network** for either device. Guest networks usually block devices from talking to each other.
+  - **Multicast allowed.** The iPhone finds the TV with Bonjour (mDNS), which uses multicast.
+  - Both devices on the **same subnet / VLAN**. Mesh Wi‑Fi from one router is fine.
+
+### What goes over the network
+
+| Step | How | Leaves your home? |
+|---|---|---|
+| **Finding the TV** | Bonjour (mDNS) on UDP port 5353. The TV announces `_airplay._tcp` and `_raop._tcp` with its name. | No |
+| **Connecting** | RTSP/HTTP over TCP to the TV. Pairing, the optional PIN check and the FairPlay handshake happen here. | No |
+| **Screen mirroring** | Encrypted H.264 video over TCP, straight from the iPhone to the TV. | No |
+| **Sound** | Encrypted audio over UDP, straight from the iPhone to the TV. | No |
+| **Video casting** (an app's AirPlay button) | The iPhone sends the video's playlist to the TV over your network, then **the TV downloads the video itself** from the site (e.g. YouTube). | **Yes**, the TV needs internet for this |
+
+- **Ports:** the TV picks free ports each time it starts and announces them over Bonjour, so there's nothing to set up on the router. Because the ports change, you can't forward or pin them; just allow local traffic between devices.
+- **Mirroring and sound work without internet**, as long as the TV and iPhone share a network.
+- **Nothing is sent anywhere else:** no account, no cloud service, no analytics or tracking. The app only talks to the iPhone that connects, and to the video site when you cast a video.
+
+### Android permissions
+
+| Permission | Why |
+|---|---|
+| `INTERNET` | Open network connections (local AirPlay, and video casting) |
+| `ACCESS_NETWORK_STATE`, `ACCESS_WIFI_STATE` | Find the TV's IP address and show it on screen |
+| `CHANGE_WIFI_MULTICAST_STATE` | Receive Bonjour (multicast) on Wi‑Fi so iPhones can find the TV |
+| `FOREGROUND_SERVICE`, `WAKE_LOCK`, `POST_NOTIFICATIONS` | Keep listening in the background, with a notification |
+
 ## 🛟 Troubleshooting
 
 <details>
