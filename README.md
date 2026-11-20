@@ -13,12 +13,18 @@ Screen and sound over AirPlay. Nothing to install on the Apple device.
 
 ### ⬇️ Download
 
-| Your TV runs | Get this APK |
-|:---:|:---:|
-| **Android 8.0 or newer** | [**AirMirrorTV-android8.apk**](AirMirrorTV-android8.apk) · 2.1 MB |
-| **Android 5.0 – 7.1** (older boxes) | [**AirMirrorTV-android5.apk**](AirMirrorTV-android5.apk) · 2.4 MB |
+<a href="../../raw/main/AirMirrorTV-android8.apk"><img src="https://img.shields.io/badge/Download-Android%208.0%2B-1A73E8?style=for-the-badge&logo=android&logoColor=white" alt="Download for Android 8.0 and newer" height="44"></a>
+&nbsp;
+<a href="../../raw/main/AirMirrorTV-android5.apk"><img src="https://img.shields.io/badge/Download-Android%205.0%20%E2%80%93%207.1-34A853?style=for-the-badge&logo=android&logoColor=white" alt="Download for Android 5.0 to 7.1" height="44"></a>
 
-<sub>Not sure? The android5 APK also works on newer Android. Find your version in the TV's Settings → About.</sub>
+<sub>Version 1.19 · free · about 2 MB · the download starts straight away</sub>
+
+| Your TV runs | Download | Size |
+|:---:|:---:|:---:|
+| **Android 8.0 or newer** | [AirMirrorTV-android8.apk](../../raw/main/AirMirrorTV-android8.apk) | 2.1 MB |
+| **Android 5.0 – 7.1** (older boxes) | [AirMirrorTV-android5.apk](../../raw/main/AirMirrorTV-android5.apk) | 2.4 MB |
+
+<sub>Not sure which? Check the TV's **Settings → About → Android version**. The Android 5 APK also works on newer Android.</sub>
 
 <br>
 
