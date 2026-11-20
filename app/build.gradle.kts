@@ -11,8 +11,25 @@ android {
         applicationId = "com.airmirror.tv"
         minSdk = 21
         targetSdk = 34
-        versionCode = 18
-        versionName = "1.17"
+        versionCode = 19
+        versionName = "1.18"
+    }
+
+    // Two APKs from the same code: one for old TV boxes, one for current Android.
+    flavorDimensions += "android"
+    productFlavors {
+        create("android5") {
+            dimension = "android"
+            minSdk = 21 // Android 5.0 Lollipop and newer
+            versionNameSuffix = "-android5"
+        }
+        create("android8") {
+            dimension = "android"
+            minSdk = 26 // Android 8.0 Oreo and newer
+            // Higher code so it replaces the android5 build on a newer device.
+            versionCode = 1000 + (defaultConfig.versionCode ?: 0)
+            versionNameSuffix = "-android8"
+        }
     }
 
     buildTypes {

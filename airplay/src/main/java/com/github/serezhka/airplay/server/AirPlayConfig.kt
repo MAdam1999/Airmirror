@@ -9,4 +9,11 @@ class AirPlayConfig {
     var isMdnsLoopback: Boolean = false
     /** System tray menu (cast picker + quit). Bound from `airplay.tray-enabled`. */
     var isTrayEnabled: Boolean = true
+
+    /**
+     * AirPlay password (PIN). When set, a phone must type it before it can mirror or play audio;
+     * null or empty means no password. Read on every connection, so it can change while running.
+     */
+    @Volatile
+    var password: String? = null
 }

@@ -27,13 +27,17 @@
     <string name="settings_approval_title">Ask on the TV</string>
     <string name="settings_approval_subtitle">A new device shows an Allow/Deny prompt here first.</string>
     <string name="settings_pin_title">Require a PIN on the iPhone</string>
-    <string name="settings_pin_subtitle">The iPhone must enter a code shown on this TV.</string>
-    <string name="settings_coming_soon_suffix">  ·  coming soon</string>
-    <string name="settings_pin_toast">Not built yet — still using Ask on the TV for now.</string>
+    <string name="settings_pin_subtitle">The iPhone must type a PIN you choose before it can mirror.</string>
     <string name="settings_none_title">Anyone can connect</string>
     <string name="settings_none_subtitle">No prompt — every device connects automatically.</string>
     <string name="how_to">How to connect</string>
     <string name="step_1">Connect your iPhone to the same Wi‑Fi as this TV</string>
     <string name="step_2">Open Control Center and tap Screen Mirroring</string>
     <string name="step_3">Pick the name shown here. Your screen and sound appear on the TV</string>
+    <string name="pin_dialog_title">Set a PIN</string>
+    <string name="pin_dialog_message">Choose 4 to 8 digits. An iPhone asks for this PIN when it starts mirroring to this TV (it can remember it). Casting a video from an app still shows Allow/Deny here.</string>
+    <string name="pin_invalid">Use 4 to 8 digits.</string>
+    <string name="pin_saved">PIN saved. iPhones must now enter it to mirror.</string>
+    <string name="change_pin_title">Change PIN</string>
+    <string name="change_pin_subtitle">A %1$d-digit PIN is set</string>
 </resources>

@@ -24,8 +24,11 @@ class MirrorPlayback(private val listener: Listener) : Playback {
 
     /** Lets the app hold off showing a picture from a device until someone approves it on the TV. */
     fun interface ApprovalGate {
-        /** Called on a background thread. Call `decision` (true/false) once, from any thread. */
-        fun requestApproval(deviceName: String, decision: (Boolean) -> Unit)
+        /**
+         * Called on a background thread. Call `decision` (true/false) once, from any thread.
+         * `cast` is true for single-video casting (an app's AirPlay button), false for mirroring/audio.
+         */
+        fun requestApproval(deviceName: String, cast: Boolean, decision: (Boolean) -> Unit)
     }
 
     private val video = VideoDecoder()
@@ -93,7 +96,7 @@ class MirrorPlayback(private val listener: Listener) : Playback {
         approved = false
         awaitingApproval = true
         val name = clientName
-        gate.requestApproval(name) { ok ->
+        gate.requestApproval(name, cast = false) { ok ->
             awaitingApproval = false
             approved = ok
             if (ok) {
@@ -152,7 +155,7 @@ class MirrorPlayback(private val listener: Listener) : Playback {
             return
         }
         val name = clientName
-        gate.requestApproval(name) { ok ->
+        gate.requestApproval(name, cast = false) { ok ->
             if (ok) {
                 Log.i(TAG, "Audio stream (speaker cast): $audioStreamInfo")
                 audio.start(audioStreamInfo, volume.toFloat())
@@ -194,7 +197,7 @@ class MirrorPlayback(private val listener: Listener) : Playback {
             return
         }
         val name = clientName
-        gate.requestApproval(name) { ok ->
+        gate.requestApproval(name, cast = true) { ok ->
             if (ok) {
                 startVodPlayback(playlistUri)
             } else {

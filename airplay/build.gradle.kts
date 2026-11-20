@@ -24,4 +24,6 @@ dependencies {
     implementation("org.jmdns:jmdns:3.5.12")
     implementation("io.netty:netty-codec-http:4.1.115.Final")
     implementation("io.lindstrom:m3u8-parser:0.30")
+
+    testImplementation("org.jetbrains.kotlin:kotlin-test-junit:2.0.20")
 }

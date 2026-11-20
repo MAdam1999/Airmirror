@@ -22,12 +22,15 @@
 | 🔊 **Sound** | AAC-ELD, AAC and ALAC audio through the TV |
 | ✏️ **Rename your receiver** | Press OK on the remote to change the name your iPhone shows |
 | 📡 **Zero setup on iPhone** | Shows up as a receiver in Control Center → Screen Mirroring |
-| 📦 **Small** | One 1.7 MB APK, no Google services needed |
+| 🔒 **PIN lock** | Settings → *Require a PIN on the iPhone*: phones must type your 4–8 digit PIN to mirror |
+| 📦 **Small** | About 2.2 MB, no Google services needed |
 | 🕰️ **Old boxes welcome** | Works on Android 5.0 (Lollipop) and newer |
 
 ## 🚀 Quick start
 
-1. **Install** [`AirMirrorTV.apk`](AirMirrorTV.apk) on the TV or box (see below).
+1. **Install** the APK for your TV's Android version (see below):
+   - [`AirMirrorTV-android5.apk`](AirMirrorTV-android5.apk): Android 5.0 – 7.1 (works on newer too)
+   - [`AirMirrorTV-android8.apk`](AirMirrorTV-android8.apk): Android 8.0 and newer
 2. Put the TV box and the iPhone on the **same Wi‑Fi network**.
 3. Open **AirMirror TV** on the box. It shows the receiver name.
 4. On the iPhone: **Control Center → Screen Mirroring →** pick that name.
@@ -37,7 +40,7 @@
 
 ```bash
 adb connect <tv-box-ip>
-adb install -r AirMirrorTV.apk
+adb install -r AirMirrorTV-android8.apk   # or AirMirrorTV-android5.apk on Android 5–7
 ```
 
 Or copy the APK to a USB stick, open it on the TV and allow *Install unknown apps*.
@@ -70,7 +73,15 @@ Written in Kotlin. Needs JDK 17, Android SDK 34 and Gradle 8.7 (the Kotlin 2.0.2
 gradle assembleRelease -x lintVitalAnalyzeRelease -x lintVitalReportRelease -x lintVitalRelease
 ```
 
-The APK is written to `app/build/outputs/apk/release/`.
+This builds two APKs: `app/build/outputs/apk/android5/release/` (Android 5.0+) and
+`app/build/outputs/apk/android8/release/` (Android 8.0+).
+
+### PIN lock
+
+In **Settings → Who can connect**, pick **Require a PIN on the iPhone** and choose 4–8 digits.
+When an iPhone starts mirroring (or plays audio to the TV), it shows an *AirPlay password* box and
+must type that PIN; it can remember it. After 5 wrong tries the connection is dropped. Casting a
+video from an app's own AirPlay button doesn't use the PIN, so it still asks Allow/Deny on the TV.
 
 ## ⚠️ Limits
 

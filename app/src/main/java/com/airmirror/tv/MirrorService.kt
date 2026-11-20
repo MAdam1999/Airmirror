@@ -60,6 +60,7 @@ class MirrorService : Service(), MirrorPlayback.Listener, MirrorPlayback.Approva
 
     private lateinit var playback: MirrorPlayback
     @Volatile private var server: AirPlayServer? = null
+    @Volatile private var airPlayConfig: AirPlayConfig? = null
     private var multicastLock: WifiManager.MulticastLock? = null
     @Volatile private var ui: UiCallback? = null
 
@@ -136,8 +137,8 @@ class MirrorService : Service(), MirrorPlayback.Listener, MirrorPlayback.Approva
 
     fun connectMode(): String {
         val mode = prefs.getString("connect_mode", MODE_APPROVAL) ?: MODE_APPROVAL
-        // PIN mode isn't built yet; never leave the receiver running unguarded because of it.
-        return if (mode == MODE_PIN) MODE_APPROVAL else mode
+        // PIN mode without a PIN would leave the receiver unguarded; fall back to asking on the TV.
+        return if (mode == MODE_PIN && pin() == null) MODE_APPROVAL else mode
     }
 
     fun setConnectMode(mode: String) {
@@ -145,14 +146,32 @@ class MirrorService : Service(), MirrorPlayback.Listener, MirrorPlayback.Approva
         applyConnectMode()
     }
 
+    /** The PIN iPhones must type in PIN mode, or null if none has been set. */
+    fun pin(): String? = prefs.getString("pin", null)?.takeIf { isValidPin(it) }
+
+    /** Saves a new PIN and switches to PIN mode. Takes effect for the next connection, no restart. */
+    fun setPin(pin: String) {
+        require(isValidPin(pin))
+        prefs.edit().putString("pin", pin).putString("connect_mode", MODE_PIN).apply()
+        applyConnectMode()
+    }
+
     private fun applyConnectMode() {
-        val gated = connectMode() != MODE_NONE
-        playback.approvalGate = if (gated) this else null
+        val mode = connectMode()
+        playback.approvalGate = if (mode != MODE_NONE) this else null
+        airPlayConfig?.password = if (mode == MODE_PIN) pin() else null
     }
 
     // --- MirrorPlayback.ApprovalGate (called from Netty threads) ---
 
-    override fun requestApproval(deviceName: String, decision: (Boolean) -> Unit) {
+    override fun requestApproval(deviceName: String, cast: Boolean, decision: (Boolean) -> Unit) {
+        // In PIN mode the AirPlay server already made the phone type the PIN before any mirroring
+        // or audio stream could start. Video casting (an app's own AirPlay button) never goes
+        // through that check, so it still gets the Allow/Deny prompt below.
+        if (!cast && connectMode() == MODE_PIN) {
+            decision(true)
+            return
+        }
         val approved = prefs.getStringSet("approved_devices", emptySet()).orEmpty()
         if (deviceName in approved) {
             decision(true)
@@ -223,7 +242,9 @@ class MirrorService : Service(), MirrorPlayback.Listener, MirrorPlayback.Approva
             isHlsEnabled = true // also offer the AirPlay button inside Safari/YouTube/etc, not just mirroring
             isMdnsLoopback = false
             isTrayEnabled = false
+            password = if (connectMode() == MODE_PIN) pin() else null
         }
+        airPlayConfig = config
 
         serverExecutor.execute {
             try {
@@ -363,8 +384,14 @@ class MirrorService : Service(), MirrorPlayback.Listener, MirrorPlayback.Approva
 
         /** How a new connection is let through. Kept as plain strings so they're simple prefs values. */
         const val MODE_APPROVAL = "approval" // ask Allow/Deny on the TV (default)
-        const val MODE_PIN = "pin" // enter a code on the iPhone — not implemented yet
+        const val MODE_PIN = "pin" // the iPhone must type the PIN set on the TV
         const val MODE_NONE = "none" // anyone can connect automatically
+
+        const val PIN_MIN_LENGTH = 4
+        const val PIN_MAX_LENGTH = 8
+
+        fun isValidPin(pin: String): Boolean =
+            pin.length in PIN_MIN_LENGTH..PIN_MAX_LENGTH && pin.all { it in '0'..'9' }
 
         private fun cleanName(raw: String): String = raw.replace('.', ' ').trim()
 

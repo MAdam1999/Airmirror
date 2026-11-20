@@ -430,6 +430,16 @@ class MainActivity : Activity(), MirrorService.UiCallback, TextureView.SurfaceTe
                 R.string.settings_none_title, R.string.settings_none_subtitle, current,
             ),
         )
+
+        if (current == MirrorService.MODE_PIN) {
+            into.addView(space(16))
+            val digits = s.pin()?.length ?: 0
+            into.addView(
+                settingsRow(R.drawable.ic_lock, R.string.change_pin_title, getString(R.string.change_pin_subtitle, digits)) {
+                    showPinDialog()
+                },
+            )
+        }
     }
 
     /** A Material list row: leading icon, two lines of text, trailing icon. */
@@ -472,15 +482,10 @@ class MainActivity : Activity(), MirrorService.UiCallback, TextureView.SurfaceTe
         listRow(iconRes, PRIMARY, getString(titleRes), subtitle, R.drawable.ic_chevron_right, TEXT_TERTIARY, false)
             .apply { setOnClickListener(onClick) }
 
-    /** One selectable row for a connect mode (Material radio); the PIN row is shown but not yet selectable. */
+    /** One selectable row for a connect mode (Material radio). Picking PIN without a PIN asks for one. */
     private fun settingsOption(mode: String, iconRes: Int, titleRes: Int, subtitleRes: Int, current: String): View {
         val selected = mode == current
-        val comingSoon = mode == MirrorService.MODE_PIN
-        val subtitle = if (comingSoon) {
-            getString(subtitleRes) + getString(R.string.settings_coming_soon_suffix)
-        } else {
-            getString(subtitleRes)
-        }
+        val subtitle = getString(subtitleRes)
         val row = listRow(
             iconRes,
             if (selected) PRIMARY else TEXT_SECONDARY,
@@ -490,18 +495,67 @@ class MainActivity : Activity(), MirrorService.UiCallback, TextureView.SurfaceTe
             if (selected) PRIMARY else TEXT_TERTIARY,
             selected,
         )
-        row.alpha = if (comingSoon) 0.55f else 1f
         row.setOnClickListener {
-            if (comingSoon) {
-                Toast.makeText(this, R.string.settings_pin_toast, Toast.LENGTH_SHORT).show()
+            val s = service ?: return@setOnClickListener
+            if (mode == MirrorService.MODE_PIN && s.pin() == null) {
+                showPinDialog()
                 return@setOnClickListener
             }
-            service?.let {
-                it.setConnectMode(mode)
-                rebuildRightPanel()
-            }
+            s.setConnectMode(mode)
+            rebuildRightPanel()
         }
         return row
+    }
+
+    /** Lets the owner choose the PIN iPhones must type; saving it also turns PIN mode on. */
+    private fun showPinDialog() {
+        val input = EditText(this).apply {
+            isSingleLine = true
+            inputType = android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_VARIATION_PASSWORD
+            filters = arrayOf<InputFilter>(InputFilter.LengthFilter(MirrorService.PIN_MAX_LENGTH))
+            hint = "• • • •"
+            gravity = Gravity.CENTER
+            textSize = 28f
+            letterSpacing = 0.3f
+            setTextColor(TEXT_PRIMARY)
+            setHintTextColor(TEXT_TERTIARY)
+            background = MaterialStyle.focusableRow(this@MainActivity, 12f)
+            setPadding(dp(18), dp(14), dp(18), dp(14))
+            imeOptions = EditorInfo.IME_ACTION_DONE
+        }
+        val box = FrameLayout(this).apply { setPadding(dp(24), dp(8), dp(24), 0) }
+        box.addView(input)
+
+        val dialog = AlertDialog.Builder(this, R.style.AppDialog)
+            .setIcon(R.drawable.ic_lock)
+            .setTitle(R.string.pin_dialog_title)
+            .setMessage(R.string.pin_dialog_message)
+            .setView(box)
+            .setPositiveButton(R.string.save, null) // set below so a bad PIN keeps the dialog open
+            .setNegativeButton(android.R.string.cancel, null)
+            .create()
+
+        fun trySave() {
+            val pin = input.text.toString()
+            if (!MirrorService.isValidPin(pin)) {
+                input.error = getString(R.string.pin_invalid)
+                return
+            }
+            service?.setPin(pin)
+            dialog.dismiss()
+            Toast.makeText(this, R.string.pin_saved, Toast.LENGTH_SHORT).show()
+            rebuildRightPanel()
+        }
+
+        dialog.setOnShowListener {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener { trySave() }
+        }
+        input.setOnEditorActionListener { _, _, _ ->
+            trySave()
+            true
+        }
+        dialog.show()
+        input.requestFocus()
     }
 
     private fun showRenameDialog() {

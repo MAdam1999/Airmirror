@@ -46,6 +46,11 @@ class ControlHandler(
 
     private var pendingRequestBody = ByteArray(0)
 
+    // AirPlay password (PIN): one handler per TCP connection, so this is per-connection state.
+    private var authenticated = false
+    private var authNonce: String? = null
+    private var authFailures = 0
+
     private val hlsSession = HlsSessionControl(sessionManager, hlsFcupService, airPlayConsumer)
     private val responses = ControlResponses(airPlayConsumer) { pendingRequestBody }
     private val hlsPlaylistHttp = HlsPlaylistHttp(sessionManager, hlsFcupService, hlsSession, airPlayConsumer, responses)
@@ -181,7 +186,44 @@ class ControlHandler(
         responses.sendResponse(ctx, request, response)
     }
 
+    /**
+     * AirPlay password gate, checked on SETUP (the point where iOS expects it). Returns true when
+     * the request may proceed; otherwise a `401` Digest challenge has been sent and the iPhone
+     * asks its user for the PIN and retries.
+     */
+    private fun passwordAccepted(ctx: ChannelHandlerContext, request: FullHttpRequest): Boolean {
+        val password = airPlayConfig.password
+        if (password.isNullOrEmpty() || authenticated) return true
+
+        val authorization = request.headers().get(HttpHeaderNames.AUTHORIZATION)
+        if (authorization != null) {
+            if (DigestAuth.verify(authorization, request.method().name(), password, authNonce)) {
+                authenticated = true
+                authNonce = null
+                log.info("AirPlay PIN accepted")
+                return true
+            }
+            authFailures++
+            log.warn("AirPlay PIN rejected (attempt {})", authFailures)
+            if (authFailures >= MAX_PIN_ATTEMPTS) {
+                // Stop guessing on this connection; the phone has to reconnect to try again.
+                log.warn("Too many wrong PINs, closing connection")
+                ctx.close()
+                return false
+            }
+        }
+
+        val nonce = DigestAuth.newNonce()
+        authNonce = nonce
+        val response = responses.createRtspResponse(request)
+        response.setStatus(HttpResponseStatus.UNAUTHORIZED)
+        response.headers().add(HttpHeaderNames.WWW_AUTHENTICATE, DigestAuth.challenge(nonce))
+        responses.sendResponse(ctx, request, response)
+        return false
+    }
+
     private fun handleRtspSetup(ctx: ChannelHandlerContext, request: FullHttpRequest) {
+        if (!passwordAccepted(ctx, request)) return
         val session = resolveSession(request)
         val response = responses.createRtspResponse(request)
         val mediaStreamInfo = session.airPlay.rtspSetup(ByteBufInputStream(request.content()))
@@ -563,5 +605,6 @@ class ControlHandler(
         private val log = LoggerFactory.getLogger(ControlHandler::class.java)
         private val WHITESPACE = Regex("\\s+")
         private val LINE_BREAK = Regex("\r?\n")
+        private const val MAX_PIN_ATTEMPTS = 5
     }
 }
