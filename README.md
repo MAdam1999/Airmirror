@@ -16,8 +16,10 @@ Screen and sound over AirPlay. Nothing to install on the Apple device.
 <a href="../../raw/main/AirMirrorTV-android8.apk"><img src="https://img.shields.io/badge/Download-Android%208.0%2B-1A73E8?style=for-the-badge&logo=android&logoColor=white" alt="Download for Android 8.0 and newer" height="44"></a>
 &nbsp;
 <a href="../../raw/main/AirMirrorTV-android5.apk"><img src="https://img.shields.io/badge/Download-Android%205.0%20%E2%80%93%207.1-34A853?style=for-the-badge&logo=android&logoColor=white" alt="Download for Android 5.0 to 7.1" height="44"></a>
+&nbsp;
+<a href="../../releases/latest"><img src="https://img.shields.io/badge/All-Releases-5F6368?style=for-the-badge&logo=github&logoColor=white" alt="All releases and release notes" height="44"></a>
 
-<sub>Version 1.19 · free · about 2 MB · the download starts straight away</sub>
+<sub>Version 1.19 · free · about 2 MB · the download starts straight away · release notes and older versions are on <a href="../../releases">Releases</a></sub>
 
 | Your TV runs | Download | Size |
 |:---:|:---:|:---:|
